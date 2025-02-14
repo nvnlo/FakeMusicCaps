@@ -6,10 +6,12 @@ import torch
 import torchaudio
 import os
 import utils
+import torchaudio
+import soundfile as sf
 # https://pytorch.org/tutorials/intermediate/speech_command_classification_with_torchaudio_tutorial.html
 
-SUNOCAPS_PATH = '/nas/home/lcomanducci/MIR/dfm/dataset/FakeMusicCaps/SunoCaps'
-DATASET_PATH ='/nas/home/lcomanducci/MIR/dfm/dataset/FakeMusicCaps'
+SUNOCAPS_PATH = 'C:/D/homework/PSTAT 197B/data/music_subset/SunoCaps'
+DATASET_PATH = 'C:/D/homework/PSTAT 197B/data/music_subset'
 
 # Create classes dictionary
 models_names = os.listdir(DATASET_PATH)
@@ -47,7 +49,6 @@ class MusicDeepFakeDataset(torch.utils.data.Dataset):
 
         data_path = self.data_paths[idx]
         audio, _ = torchaudio.load(data_path)
-        #print(data_path)
         # Make sure audio tracks have desired length
         if  audio.shape[1] > self.AUDIO_LENGTH_SAMPLES:
             idx_slice = torch.randint(low=0, high=(audio.shape[1] - int(self.AUDIO_LENGTH_SAMPLES)), size=())
@@ -61,7 +62,7 @@ class MusicDeepFakeDataset(torch.utils.data.Dataset):
         # Normalize audio
         if torch.sum(audio) > 0:
             audio = utils.normalize_tensor(audio)
-        label = self.class_dictionary[data_path.split('/')[-2]]
+        label = self.class_dictionary[data_path.split('\\')[-2]]
         label = torch.Tensor([label])
 
         audio = audio.unsqueeze(0)
