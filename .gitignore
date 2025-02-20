@@ -7,4 +7,8 @@ __pycache__/
 # extra files inside paper_experiments
 paper_experiments/__pycache__/
 
-
+# output files
+logs/
+models/
+results/
+figures/
