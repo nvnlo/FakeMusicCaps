@@ -1,5 +1,6 @@
 import os
-os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'import sys
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
+import sys
 sys.path.append('../')
 import data_lib
 import os
@@ -36,11 +37,11 @@ parser = argparse.ArgumentParser(description='OSCLassification')
 parser.add_argument('--gpu', type=str, help='gpu', default='0')
 parser.add_argument('--model_name', type=str, default='SpecResNet')
 parser.add_argument('--audio_duration', type=float, help='Length of the audio slice in seconds',
-                    default=10)
+                    default=7.5)
 args = parser.parse_args()
 
 print('Open set (threshold)considering model {}'.format(args.model_name))
-for args.audio_duration in [10, 7.5, 5, 2.5]:
+for args.audio_duration in [7.5]:
     print('Audio duration {}'.format(args.audio_duration))
     # Model selection
     if args.model_name == 'M5':
@@ -62,7 +63,7 @@ for args.audio_duration in [10, 7.5, 5, 2.5]:
         model = network_models_lib.ResNet(img_channels=1, num_layers=18, block=network_models_lib.BasicBlock,
                                           num_classes=len(data_lib.model_labels))
         feat_type = 'freq'
-    model.load_state_dict(torch.load( os.path.join(params.PARENT_DIR,'models','{}_duration_{}_secs.pth'.format(args.model_name, round(args.audio_duration,1)))))
+    model.load_state_dict(torch.load( os.path.join(params.PARENT_DIR,'models','{}_duration_{}_secs.pth'.format(args.model_name, round(args.audio_duration,1))), weights_only=True))
 
 
 
@@ -75,7 +76,7 @@ for args.audio_duration in [10, 7.5, 5, 2.5]:
     model_labels_open_set = copy.deepcopy(model_labels)
     model_labels_open_set.update({'SunoCaps': OpenClassLabel})
     test_open_data = MusicDeepFakeDataset(test_suno_files+data_lib.test_files, model_labels_open_set, args.audio_duration,feat_type=feat_type) # ERROR
-    test_open_dataloader = torch.utils.data.DataLoader(test_open_data, batch_size=1, shuffle=True,num_workers=0)
+    test_open_dataloader = torch.utils.data.DataLoader(test_open_data, batch_size=1, shuffle=True,num_workers=1)
 
 
     # Thresholding
@@ -106,8 +107,8 @@ for args.audio_duration in [10, 7.5, 5, 2.5]:
 
     disp = ConfusionMatrixDisplay(confusion_matrix=cm,
                                   display_labels=[r'REAL', r'TTM01', r'TTM02', r'TTM03', r'TTM04', r'TTM05',r'UNKWN'])
-    # Enable LaTeX rendering
-    plt.rcParams['text.usetex'] = True
+    # Enable LaTeX rendering - commented out for now
+    # plt.rcParams['text.usetex'] = True
     # Adjust global font sizes
     # Plot confusion matrix
     disp.plot(cmap=plt.cm.Blues,colorbar=False)
@@ -116,8 +117,7 @@ for args.audio_duration in [10, 7.5, 5, 2.5]:
     plt.xlabel(r'Predicted Labels', fontsize=15)
     plt.ylabel(r'True Labels', fontsize=15)
     plt.tight_layout()
-    plt.savefig(os.path.join(params.PARENT_DIR,'figures/cm_open_set_thresh_{}_{}_sec.png'.format(args.model_name,args.audio_duration)),dpi=300)
-
+    plt.savefig(os.path.join(params.PARENT_DIR, 'figures', f'cm_open_set_thresh_{args.model_name}_{args.audio_duration}_sec.png'), dpi=300)
     plt.show()
 
     # Balanced accuracy score
@@ -162,5 +162,4 @@ for args.audio_duration in [10, 7.5, 5, 2.5]:
                                 round(precision_tot, 2),
                                 round(recall_tot, 2),
                                 round(F1_avg, 2)))
-
 

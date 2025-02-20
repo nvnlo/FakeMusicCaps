@@ -29,15 +29,13 @@ def number_of_correct(pred, target):
 parser = argparse.ArgumentParser(description='OSCLassification')
 parser.add_argument('--gpu', type=str, help='gpu', default='1')
 parser.add_argument('--model_name', type=str, default='SpecResNet')
-parser.add_argument('--log_dir', type=str, help='store tensorboard info',
-                    default='/nas/home/lcomanducci/xai_src_loc/endtoend_src_loc2/logs')
 parser.add_argument('--audio_duration', type=float, help='Length of the audio slice in seconds',
-                    default=10)
+                    default=7.5)
 args = parser.parse_args()
 
-for model in ['M5', 'RawNet2','SpecResNet']:
+for model in ['SpecResNet']:
     print('Open set (SVM) considering model {}'.format(args.model_name))
-    for args.audio_duration in [10, 7.5, 5, 2.5]:
+    for args.audio_duration in [7.5]:
         # Model selection
         # Model selection
         # Model selection
@@ -61,7 +59,7 @@ for model in ['M5', 'RawNet2','SpecResNet']:
                                               num_classes=len(data_lib.model_labels))
             feat_type = 'freq'
 
-        model.load_state_dict(torch.load( os.path.join(params.PARENT_DIR,'models','{}_duration_{}_secs.pth'.format(args.model_name, round(args.audio_duration,1)))))
+        model.load_state_dict(torch.load( os.path.join(params.PARENT_DIR,'models','{}_duration_{}_secs.pth'.format(args.model_name, round(args.audio_duration,1))), weights_only=True))
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model.to(device)
@@ -71,13 +69,17 @@ for model in ['M5', 'RawNet2','SpecResNet']:
         test_suno_files = [os.path.join(SUNOCAPS_PATH,path) for path in test_suno]
         model_labels_open_set = copy.deepcopy(model_labels)
         model_labels_open_set.update({'SunoCaps': OpenClassLabel})
+        print(model_labels_open_set)
+        print(f"Number of SunoCaps test files: {len(test_suno_files)}")
+        print(f"Number of regular test files: {len(data_lib.test_files)}")
+        print(f"Total test files: {len(test_suno_files+data_lib.test_files)}")
         test_open_data = MusicDeepFakeDataset(test_suno_files+data_lib.test_files, model_labels_open_set,args.audio_duration,feat_type=feat_type) # ERROR
-        test_open_dataloader = torch.utils.data.DataLoader(test_open_data, batch_size=1, shuffle=True,num_workers=0)
+        test_open_dataloader = torch.utils.data.DataLoader(test_open_data, batch_size=1, shuffle=True,num_workers=1)
 
         X_train = [] # s= [[0], [0.44], [0.45], [0.46], [1]]
         # Create training set
         training_data = data_lib.MusicDeepFakeDataset(data_lib.train_set, data_lib.model_labels, args.audio_duration,feat_type=feat_type)
-        train_dataloader = torch.utils.data.DataLoader(training_data, batch_size=1, shuffle=True, num_workers=8)
+        train_dataloader = torch.utils.data.DataLoader(training_data, batch_size=1, shuffle=True, num_workers=1)
 
         print('Creating train set for SVM')
         for data, target in tqdm(train_dataloader):
@@ -87,9 +89,10 @@ for model in ['M5', 'RawNet2','SpecResNet']:
 
         # Train One-class support-vector-machine
         print('Start SVM training')
-        #clf = OneClassSVM(kernel='poly',gamma='auto',nu=0.8).fit(X_train)
+        clf = OneClassSVM(kernel='poly',gamma='auto',nu=0.8).fit(X_train)
 
-        clf = OneClassSVM(gamma='auto').fit(X_train)
+        # This was used originally, but didn't work well. Trying a more sophisticated SVM
+        # clf = OneClassSVM(gamma='auto').fit(X_train)
 
         print('SVM Training ended')
         #https: // scikit - learn.org / stable / modules / outlier_detection.html  # outlier-detection
@@ -102,17 +105,18 @@ for model in ['M5', 'RawNet2','SpecResNet']:
         for data, target in test_open_dataloader:
             data = data.to(device)
             target = target.to(device)
+
             # apply transform and model on whole batch directly on device
             output = model(data)
             outlier = clf.predict(output[:, 0, :].tolist())[0]
-            #print('outlier: {} target: {}'.format(outlier,target))
+            print('outlier: {} target: {}'.format(outlier,target))
             # For Accuracy
             pred = output.argmax(dim=1)
 
             # If an outlier is detected assign Unkown Class
             if outlier == -1:
                 pred = torch.Tensor([[OpenClassLabel]])
-
+                
             correct += number_of_correct(pred.squeeze(), target.squeeze())
 
 
@@ -128,8 +132,8 @@ for model in ['M5', 'RawNet2','SpecResNet']:
         disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=data_lib.models_names + ['SunoCaps/Unknown'])
         disp = ConfusionMatrixDisplay(confusion_matrix=cm,
                                       display_labels=[r'REAL', r'TTM01', r'TTM02', r'TTM03', r'TTM04', r'TTM05',r'UNKWN'])
-        # Enable LaTeX rendering
-        plt.rcParams['text.usetex'] = True
+        # Enable LaTeX rendering - commented out for now
+        # plt.rcParams['text.usetex'] = True
         # Adjust global font sizes
         # Plot confusion matrix
         disp.plot(cmap=plt.cm.Blues, colorbar=False)
@@ -138,8 +142,7 @@ for model in ['M5', 'RawNet2','SpecResNet']:
         plt.xlabel(r'Predicted Labels', fontsize=15)
         plt.ylabel(r'True Labels', fontsize=15)
         plt.tight_layout()
-        plt.savefig(os.path.join(params.PARENT_DIR,'figures/cm_open_set_svm_{}_{}_sec.png'.format(args.model_name,args.audio_duration)),dpi=300)
-
+        plt.savefig(os.path.join(params.PARENT_DIR,'figures', f'cm_open_set_svm_{args.model_name}_{args.audio_duration}_sec.png'), dpi=300)
         plt.show()
 
         # Balanced accuracy score

@@ -4,12 +4,14 @@ import seaborn as sns
 import os
 import sys
 sys.path.append('../')
-plt.rcParams['text.usetex'] = True
+import params
+# plt.rcParams['text.usetex'] = True
 from sklearn.metrics import ConfusionMatrixDisplay
-RESULTS_DIR = os.path.join(params.PARENT_PATH,'results')
-FIGURES_DIR = os.path.join(params.PARENT_PATH,'figures')
-time_windows = [10, 7.5, 5, 2.5]
-model_names = ['M5', 'RawNet2', 'SpecResNet']
+RESULTS_DIR = os.path.join(params.PARENT_DIR,'results')
+FIGURES_DIR = os.path.join(params.PARENT_DIR,'figures')
+# TEMPORARY TIME WINDOWS AND MODEL NAMES, ADD THE REST WHEN READY
+time_windows = [7.5]
+model_names = ['SpecResNet']
 
 # PLOT IMAGES (ACC VS TIME) - Closed Set
 colors = ['#1F77B4','#AEC7E8','#17BECF','#9EDAE5']
@@ -25,10 +27,12 @@ for i_m, m_n in enumerate(model_names):
         ACC_B[i_t] = arr[0]
     plt.plot(time_windows,ACC_B,'s-',linewidth=linewidth,color=colors[i_m])
 plt.grid('major')
-plt.xlabel(r'$\mathrm{Window}~\mathrm{length}~\mathrm{[s]}$', fontsize=fontsize)
-plt.ylabel(r'$\mathrm{ACC_B}$', fontsize=fontsize)
+# plt.xlabel(r'$\mathrm{Window}~\mathrm{length}~\mathrm{[s]}$', fontsize=fontsize)
+# plt.ylabel(r'$\mathrm{ACC_B}$', fontsize=fontsize)
+plt.xlabel('Window length [s]', fontsize=fontsize)
+plt.ylabel('ACC_B', fontsize=fontsize)
 plt.tight_layout()
-plt.savefig(os.path.join(FIGURES_DIR,'closed_set_vs_window.png', dpi=300))
+plt.savefig(os.path.join(FIGURES_DIR,'closed_set_vs_window.png'), dpi=300)
 
 plt.show()
 
@@ -42,10 +46,12 @@ for i_m, m_n in enumerate(model_names):
         ACC_B[i_t] = arr[0]
     plt.plot(time_windows,ACC_B,'s-',linewidth=linewidth,color=colors[i_m])
 plt.grid('major')
-plt.xlabel(r'$\mathrm{Window}~\mathrm{length}~\mathrm{[s]}$', fontsize=fontsize)
-plt.ylabel(r'$\mathrm{ACC_B}$', fontsize=fontsize)
+# plt.xlabel(r'$\mathrm{Window}~\mathrm{length}~\mathrm{[s]}$', fontsize=fontsize)
+# plt.ylabel(r'$\mathrm{ACC_B}$', fontsize=fontsize)
+plt.xlabel('Window length [s]', fontsize=fontsize)
+plt.ylabel('ACC_B', fontsize=fontsize)
 plt.tight_layout()
-plt.savefig(os.path.join(FIGURES_DIR,'open_set_thresh_vs_window.png', dpi=300))
+plt.savefig(os.path.join(FIGURES_DIR,'open_set_thresh_vs_window.png'), dpi=300)
 
 plt.show()
 
@@ -59,10 +65,12 @@ for i_m, m_n in enumerate(model_names):
         ACC_B[i_t] = arr[0]
     plt.plot(time_windows,ACC_B,'s-',linewidth=linewidth,color=colors[i_m])
 plt.grid('major')
-plt.xlabel(r'$\mathrm{Window}~\mathrm{length}~\mathrm{[s]}$', fontsize=fontsize)
-plt.ylabel(r'$\mathrm{ACC_B}$', fontsize=fontsize)
+# plt.xlabel(r'$\mathrm{Window}~\mathrm{length}~\mathrm{[s]}$', fontsize=fontsize)
+# plt.ylabel(r'$\mathrm{ACC_B}$', fontsize=fontsize)
+plt.xlabel('Window length [s]', fontsize=fontsize)
+plt.ylabel('ACC_B', fontsize=fontsize)
 plt.tight_layout()
-plt.savefig(os.path.join(FIGURES_DIR,'open_set_svm_vs_window.png', dpi=300))
+plt.savefig(os.path.join(FIGURES_DIR,'open_set_svm_vs_window.png'), dpi=300)
 
 plt.show()
 
@@ -97,9 +105,9 @@ for i_m, m_n in enumerate(model_names):
     cm = np.load(os.path.join(FIGURES_DIR,'cm_closed_set_{}_{}_sec.npy'.format(m_n, t_w)))
 
     disp = ConfusionMatrixDisplay(confusion_matrix=cm,
-                                  display_labels=[r'REAL',r'TTM01', r'TTM02', r'TTM03', r'TTM04', r'TTM05'])
+                                 display_labels=['REAL', 'TTM01', 'TTM02', 'TTM03', 'TTM04', 'TTM05'])
     # Enable LaTeX rendering
-    plt.rcParams['text.usetex'] = True
+    # plt.rcParams['text.usetex'] = True
     # Adjust global font sizes
 
     #plt.figure()
@@ -121,9 +129,9 @@ for i_m, m_n in enumerate(model_names):
     cm = np.load(os.path.join(FIGURES_DIR,'cm_open_set_thresh_{}_{}_sec.npy'.format(m_n, t_w)))
 
     disp = ConfusionMatrixDisplay(confusion_matrix=cm,
-                                  display_labels=[r'REAL', r'TTM01', r'TTM02', r'TTM03', r'TTM04', r'TTM05',r'UNKWN'])
+                                  display_labels=['REAL', 'TTM01', 'TTM02', 'TTM03', 'TTM04', 'TTM05', 'UNKWN'])
     # Enable LaTeX rendering
-    plt.rcParams['text.usetex'] = True
+    # plt.rcParams['text.usetex'] = True
     # Adjust global font sizes
 
     #plt.figure()
@@ -132,8 +140,8 @@ for i_m, m_n in enumerate(model_names):
     # Customize tick labels and axis labels to use LaTeX
     plt.xticks(rotation=45, fontsize=10)
     plt.yticks( fontsize=12)
-    plt.xlabel(r'Predicted Labels',fontsize=FONTSIZE)
-    plt.ylabel(r'True Labels',fontsize=FONTSIZE)
+    plt.xlabel('Predicted Labels',fontsize=FONTSIZE)
+    plt.ylabel('True Labels',fontsize=FONTSIZE)
     plt.tight_layout()
     for labels in disp.text_.ravel():
         labels.set_fontsize(15)
@@ -148,7 +156,7 @@ for i_m, m_n in enumerate(model_names):
     disp = ConfusionMatrixDisplay(confusion_matrix=cm,
                                   display_labels=[r'REAL', r'TTM01', r'TTM02', r'TTM03', r'TTM04', r'TTM05',r'UNKWN'])
     # Enable LaTeX rendering
-    plt.rcParams['text.usetex'] = True
+    # plt.rcParams['text.usetex'] = True
     # Adjust global font sizes
     # Plot confusion matrix
     disp.plot(cmap=plt.cm.Blues,colorbar=False)

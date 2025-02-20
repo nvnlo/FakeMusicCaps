@@ -13,11 +13,11 @@ import numpy as np
 from sklearn.metrics import f1_score, balanced_accuracy_score, confusion_matrix, ConfusionMatrixDisplay
 import matplotlib as mpl
 
-# Use LaTeX for text rendering
-mpl.rcParams['text.usetex'] = True
-mpl.rcParams['font.family'] = 'serif'
-mpl.rcParams['font.serif'] = ['Times New Roman']  # or any other serif font you like
-mpl.rcParams['text.latex.preamble'] = r'\usepackage{amsmath}'
+# Use LaTeX for text rendering - commented out for now
+# mpl.rcParams['text.usetex'] = True
+# mpl.rcParams['font.family'] = 'serif'
+# mpl.rcParams['font.serif'] = ['Times New Roman']  # or any other serif font you like
+# mpl.rcParams['text.latex.preamble'] = r'\usepackage{amsmath}'
 
 # Continue with your plotting code
 def number_of_correct(pred, target):
@@ -66,13 +66,13 @@ def main():
                                             num_classes=len(data_lib.model_labels))
             feat_type = 'freq'
 
-        model.load_state_dict(torch.load(os.path.join(params.PARENT_DIR,'models','{}_duration_{}_secs.pth'.format(args.model_name, round(args.audio_duration,1)))))
+        model.load_state_dict(torch.load(os.path.join(params.PARENT_DIR,'models','{}_duration_{}_secs.pth'.format(args.model_name, round(args.audio_duration,1))), weights_only=True))
         model.to(device)
 
         test_closed_data = data_lib.MusicDeepFakeDataset(data_lib.test_files, data_lib.model_labels,
                                                         args.audio_duration,feat_type=feat_type)  # ERROR
 
-        test_closed_dataloader = torch.utils.data.DataLoader(test_closed_data, batch_size=1, shuffle=True, num_workers=2)
+        test_closed_dataloader = torch.utils.data.DataLoader(test_closed_data, batch_size=1, shuffle=True, num_workers=1)
 
 
                                                             #### CLOSED SET ANALYSIS ##############################################################################################
@@ -102,8 +102,8 @@ def main():
 
         disp = ConfusionMatrixDisplay(confusion_matrix=cm,
                                     display_labels=[r'REAL',r'TTM01', r'TTM02', r'TTM03', r'TTM04', r'TTM05'])
-        # Enable LaTeX rendering
-        plt.rcParams['text.usetex'] = True
+        # Enable LaTeX rendering - commented out for now
+        # plt.rcParams['text.usetex'] = True
         # Adjust global font sizes
 
         #plt.figure()
@@ -114,7 +114,7 @@ def main():
         plt.xlabel(r'Predicted Labels',fontsize=15)
         plt.ylabel(r'True Labels',fontsize=15)
         plt.tight_layout()
-        plt.savefig(os.path.join(params.PARENT_DIR,'figures/cm_closed_set_{}_{}_sec.png'.format(args.model_name,args.audio_duration),dpi=300))
+        plt.savefig(os.path.join(params.PARENT_DIR, 'figures', f'cm_closed_set_{args.model_name}_{args.audio_duration}_sec.png'), dpi=300)
         plt.show()
         # Balanced accuracy score
         ACC_B = balanced_accuracy_score(target_list, pred_list)
@@ -146,8 +146,8 @@ def main():
         F1_per_class = f1_score(target_list, pred_list, average=None)
         F1_avg = f1_score(target_list, pred_list, average='macro')
 
-
         results = np.array([round(ACC_B, 2), round(precision_tot, 2), round(recall_tot, 2),  round(F1_avg, 2)])
+        os.makedirs(os.path.join(params.PARENT_DIR, 'results'), exist_ok=True)
         results_filename = os.path.join(params.PARENT_DIR,'results','closed_set_{}_{}_sec.npy'.format(args.model_name,
                                                                                                     args.audio_duration))
         np.save(results_filename, results)

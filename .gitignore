@@ -1,3 +1,10 @@
+# data
 data/
 
+# pycache
 __pycache__/
+
+# extra files inside paper_experiments
+paper_experiments/__pycache__/
+
+

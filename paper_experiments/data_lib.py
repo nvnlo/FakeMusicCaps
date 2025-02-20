@@ -10,8 +10,17 @@ import torchaudio
 import soundfile as sf
 # https://pytorch.org/tutorials/intermediate/speech_command_classification_with_torchaudio_tutorial.html
 
-SUNOCAPS_PATH = 'C:/D/homework/PSTAT 197B/data/music_subset/SunoCaps'
-DATASET_PATH = 'C:/D/homework/PSTAT 197B/data/music_subset'
+
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Define paths relative to repo root
+DATA_DIR = os.path.join(REPO_ROOT, 'data')
+DATASET_PATH = os.path.join(DATA_DIR, 'FakeMusicCaps')
+SUNOCAPS_PATH = os.path.join(DATASET_PATH, 'SunoCaps')
+
+# Verify paths exist
+if not os.path.exists(SUNOCAPS_PATH):
+    print(f"Warning: SunoCaps path not found at {SUNOCAPS_PATH}")
 
 # Create classes dictionary
 models_names = os.listdir(DATASET_PATH)
@@ -62,7 +71,7 @@ class MusicDeepFakeDataset(torch.utils.data.Dataset):
         # Normalize audio
         if torch.sum(audio) > 0:
             audio = utils.normalize_tensor(audio)
-        label = self.class_dictionary[data_path.split('\\')[-2]]
+        label = self.class_dictionary[data_path.split('/')[-2]]
         label = torch.Tensor([label])
 
         audio = audio.unsqueeze(0)

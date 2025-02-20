@@ -59,7 +59,7 @@ elif args.model_name == 'SpecResNet':
     feat_type ='freq'
 
 # Data Loading
-num_workers = 2
+num_workers = 1
 training_data = data_lib.MusicDeepFakeDataset(data_lib.train_set, data_lib.model_labels, args.audio_duration,feat_type=feat_type)
 val_data = data_lib.MusicDeepFakeDataset(data_lib.val_set, data_lib.model_labels, args.audio_duration,feat_type=feat_type)
 test_closed_data = data_lib.MusicDeepFakeDataset(data_lib.test_files, data_lib.model_labels,
@@ -130,7 +130,7 @@ def validation(model, epoch):
         losses_val = losses_val + loss.item()
     losses_val /= len(val_dataloader)
     accuracy = correct/len(val_dataloader.dataset)
-    print(f"\nTest Epoch: {epoch}\tAccuracy: {correct}/{len(val_dataloader.dataset)} ({100. * correct / len(val_dataloader.dataset):.0f}%)\n")
+    print(f"\nValidation Epoch: {epoch}\tAccuracy: {correct}/{len(val_dataloader.dataset)} ({100. * correct / len(val_dataloader.dataset):.0f}%)\n")
     return losses_val, accuracy
 
 #### OPEN SET ANALYSIS ##############################################################################################
@@ -161,7 +161,7 @@ def main():
     # The transform needs to live on the same device as the model and the data.
     VAL_LOSS_MIN = 100000000000
     log_interval = 1000
-    n_epoch = 1
+    n_epoch = 100
     early_stop_cnt = 0
     patience = 10
 
