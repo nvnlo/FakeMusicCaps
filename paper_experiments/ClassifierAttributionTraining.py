@@ -161,7 +161,7 @@ def main():
     # The transform needs to live on the same device as the model and the data.
     VAL_LOSS_MIN = 100000000000
     log_interval = 1000
-    n_epoch = 15
+    n_epoch = 1
     early_stop_cnt = 0
     patience = 10
 
