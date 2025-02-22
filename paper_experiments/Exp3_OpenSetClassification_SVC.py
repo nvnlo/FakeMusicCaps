@@ -27,7 +27,7 @@ def number_of_correct(pred, target):
     return pred.squeeze().eq(target).sum().item()
 
 parser = argparse.ArgumentParser(description='OSCLassification')
-parser.add_argument('--gpu', type=str, help='gpu', default='1')
+parser.add_argument('--gpu', type=str, help='gpu', default='0')
 parser.add_argument('--model_name', type=str, default='SpecResNet')
 parser.add_argument('--audio_duration', type=float, help='Length of the audio slice in seconds',
                     default=7.5)
@@ -59,7 +59,7 @@ for model in ['SpecResNet']:
                                               num_classes=len(data_lib.model_labels))
             feat_type = 'freq'
 
-        model.load_state_dict(torch.load( os.path.join(params.PARENT_DIR,'models','{}_duration_{}_secs.pth'.format(args.model_name, round(args.audio_duration,1))), weights_only=True))
+        model.load_state_dict(torch.load( os.path.join(params.PARENT_DIR,'models','{}_duration_{}_secs.pth'.format(args.model_name, round(args.audio_duration,1)))))
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model.to(device)
@@ -81,15 +81,23 @@ for model in ['SpecResNet']:
         training_data = data_lib.MusicDeepFakeDataset(data_lib.train_set, data_lib.model_labels, args.audio_duration,feat_type=feat_type)
         train_dataloader = torch.utils.data.DataLoader(training_data, batch_size=1, shuffle=True, num_workers=1)
 
-        print('Creating train set for SVM')
-        for data, target in tqdm(train_dataloader):
-            data = data.to(device)
-            output = model(data)
-            X_train += output[:, 0, :].tolist()
+        features_path = os.path.join(params.PARENT_DIR,'models', 'svm_training_features.npy')
+        if not os.path.exists(features_path):
+            print('Creating and saving train set for SVM')
+            X_train = []
+            for data, target in tqdm(train_dataloader):
+                data = data.to(device)
+                output = model(data)
+                X_train += output[:, 0, :].tolist()
+            np.save(features_path, X_train)
+            print('Train set saved to {}'.format(features_path))
+        else:
+            X_train = np.load(features_path)
+            print('Train set loaded from {}'.format(features_path))
 
         # Train One-class support-vector-machine
         print('Start SVM training')
-        clf = OneClassSVM(kernel='poly',gamma='auto',nu=0.8).fit(X_train)
+        clf = OneClassSVM(kernel='rbf',gamma='auto',nu=0.2).fit(X_train)
 
         # This was used originally, but didn't work well. Trying a more sophisticated SVM
         # clf = OneClassSVM(gamma='auto').fit(X_train)
@@ -108,21 +116,29 @@ for model in ['SpecResNet']:
 
             # apply transform and model on whole batch directly on device
             output = model(data)
-            outlier = clf.predict(output[:, 0, :].tolist())[0]
-            print('outlier: {} target: {}'.format(outlier,target))
-            # For Accuracy
-            pred = output.argmax(dim=1)
+            logits = output.squeeze()
+            print(f"Logits: {logits}")
+            
+            features = output[:, 0, :].tolist()
+            outlier = clf.predict(features)[0]
+            print("SVM decision: {}".format(outlier))
 
-            # If an outlier is detected assign Unkown Class
+            # For Accuracy
+            pred = logits.argmax(dim=0)
+            print("ResNet prediction: {}".format(pred))
+
+            # If an outlier is detected assign Unknown Class
             if outlier == -1:
-                pred = torch.Tensor([[OpenClassLabel]])
+                pred = torch.tensor([[OpenClassLabel]], device=device)
+                print("Changed to unknown, shape: {}".format(pred.shape))
+            else: 
+                pred = pred.unsqueeze(0)
                 
             correct += number_of_correct(pred.squeeze(), target.squeeze())
 
-
             # For confusion matrix
-            pred_list = pred_list + pred.cpu().numpy()[:, 0].tolist()
-            target_list = target_list +target.cpu().to(torch.int64).numpy()[:, 0].tolist()
+            pred_list.append(pred.cpu().item())
+            target_list.append(target.cpu().item())
             # update progress bar
             #pbar.update(pbar_update)
 
